@@ -1,0 +1,106 @@
+import pygame
+import sys
+import random
+
+# Inicialização do Pygame
+pygame.init()
+
+# Configurações da janela
+WIDTH, HEIGHT = 400, 400
+ROWS, COLS = 4, 4
+TILE_SIZE = WIDTH // COLS
+
+# Cores
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+
+# Configurações do jogo
+FPS = 120
+
+# Fonte para texto
+font = pygame.font.SysFont(None, 36)
+
+# Classe que representa o jogo
+class PuzzleGame:
+    def __init__(self):
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        pygame.display.set_caption('Jogo de Diogo Quebra-Cabeça')
+
+        self.clock = pygame.time.Clock()
+
+        self.board = self.create_board()
+        self.empty_tile = (ROWS - 1, COLS - 1)  # Posição da peça vazia (última posição no tabuleiro)
+
+        self.running = True
+
+    def create_board(self):
+        # Cria e embaralha um tabuleiro de quebra-cabeça inicial
+        numbers = list(range(1, ROWS * COLS))
+        random.shuffle(numbers)
+        numbers.append(0)  # Representa a peça vazia
+
+        board = []
+        for row in range(ROWS):
+            board.append(numbers[row * COLS:(row + 1) * COLS])
+
+        return board
+
+    def draw_board(self):
+        self.screen.fill(WHITE)
+        for row in range(ROWS):
+            for col in range(COLS):
+                num = self.board[row][col]
+                rect = pygame.Rect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                pygame.draw.rect(self.screen, BLACK, rect, 2)  # Desenha borda para cada peça
+
+                if num != 0:
+                    pygame.draw.rect(self.screen, WHITE, rect)
+                    text_surface = font.render(str(num), True, BLACK)
+                    text_rect = text_surface.get_rect(center=rect.center)
+                    self.screen.blit(text_surface, text_rect)
+
+    def move_tile(self, row, col):
+        # Verifica se é possível mover a peça para a posição (row, col)
+        empty_row, empty_col = self.empty_tile
+
+        if (row == empty_row and abs(col - empty_col) == 1) or \
+           (col == empty_col and abs(row - empty_row) == 1):
+            # Troca a posição da peça clicada com a peça vazia
+            self.board[empty_row][empty_col], self.board[row][col] = self.board[row][col], self.board[empty_row][empty_col]
+            self.empty_tile = (row, col)
+
+    def check_win(self):
+        # Verifica se o tabuleiro está resolvido
+        expected = 1
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.board[row][col] != expected % (ROWS * COLS):
+                    return False
+                expected += 1
+        return True
+
+    def run(self):
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    col = event.pos[0] // TILE_SIZE
+                    row = event.pos[1] // TILE_SIZE
+                    self.move_tile(row, col)
+
+            self.draw_board()
+            pygame.display.flip()
+
+            if self.check_win():
+                print("Parabéns! Você resolveu o quebra-cabeça!")
+                self.running = False
+
+            self.clock.tick(FPS)
+
+        pygame.quit()
+        sys.exit()
+
+# Instanciar e executar o jogo
+game = PuzzleGame()
+game.run()
